@@ -1,0 +1,25 @@
+{
+  "version": "2025-01",
+  "lastUpdated": "2025-01-05",
+  "css": {
+    "followButton": "[data-testid$=\"-unfollow\"], [data-testid$=\"-follow\"]",
+    "confirmButton": "[data-testid=\"confirmationSheetConfirm\"]",
+    "notFoundIndicator": "[data-testid=\"empty_state_header_text\"]",
+    "errorPage": "[data-testid=\"error-detail\"]",
+    "loginButton": "[data-testid=\"loginButton\"]",
+    "signupButton": "[data-testid=\"signupButton\"]",
+    "accountMenu": "[data-testid=\"SideNav_AccountSwitcher_Button\"]",
+    "composeButton": "[data-testid=\"SideNav_NewTweet_Button\"]",
+    "primaryColumn": "[data-testid=\"primaryColumn\"]"
+  },
+  "text": {
+    "followingPatterns": ["Following", "following"],
+    "unfollowPatterns": ["Unfollow", "unfollow", "Yes, unfollow"],
+    "confirmPatterns": ["Unfollow", "Confirm"]
+  },
+  "timing": {
+    "pageLoadWait": 2000,
+    "clickWait": 500,
+    "elementTimeout": 10000
+  }
+}
