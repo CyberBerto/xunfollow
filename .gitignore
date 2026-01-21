@@ -1,5 +1,15 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+*.local
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,26 +17,57 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
+!.vscode/settings.json
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swp
+*~
 
-# Tauri
+# OS files
+Thumbs.db
+.Spotlight-V100
+.Trashes
+
+# Tauri (Desktop App)
 src-tauri/target/
 src-tauri/Cargo.lock
 src-tauri/gen/
+src-tauri/*.db
+src-tauri/*.db-*
+
+# Chrome Extension (when packaged)
+extension-chrome/*.crx
+extension-chrome/*.pem
+extension-chrome/*.zip
+extension-chrome/dist/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
 
 # Claude Code
 .claude/
+
+# Backup files
+*.bak
+*.backup
+*-old.*
+*-backup.*
