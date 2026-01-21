@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X Unfollow POC Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #1da1f2;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f7f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #1da1f2;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #48bb78;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 15px 0;
+        }
+
+        .comment {
+            color: #a0aec0;
+        }
+
+        .button-demo {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #1da1f2;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1a91da;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(29, 161, 242, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e1e8ed;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d8dd;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .alert-info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border-left: 4px solid #1976d2;
+        }
+
+        .alert-success {
+            background: #e8f5e9;
+            color: #388e3c;
+            border-left: 4px solid #388e3c;
+        }
+
+        .steps {
+            list-style: none;
+            counter-reset: step-counter;
+        }
+
+        .steps li {
+            counter-increment: step-counter;
+            margin-bottom: 15px;
+            padding-left: 40px;
+            position: relative;
+        }
+
+        .steps li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #1da1f2;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .demo-output {
+            background: white;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            min-height: 60px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .log-success {
+            color: #388e3c;
+        }
+
+        .log-error {
+            color: #d32f2f;
+        }
+
+        .log-info {
+            color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐦 X Unfollow - Proof of Concept</h1>
+        <p class="subtitle">See how browser-based automation works (no Tauri needed!)</p>
+
+        <div class="section">
+            <h2>💡 How It Works</h2>
+            <ul class="steps">
+                <li>Extension runs directly on x.com in your browser</li>
+                <li>Finds "Following" buttons using DOM selectors</li>
+                <li>Clicks them to unfollow with rate limiting</li>
+                <li>No external app, no Rust, no complicated setup!</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>🔍 Core Logic Demo</h2>
+            <p>This is the actual code that would run on X.com:</p>
+
+            <div class="code-block">
+<span class="comment">// Find all "Following" buttons on the page</span>
+function findFollowingButtons() {
+  const selectors = [
+    'button[data-testid$="-unfollow"]',
+    'button:has(span:text("Following"))',
+    'div[role="button"]:has(span:text("Following"))'
+  ];
+
+  return document.querySelectorAll(selectors.join(','));
+}
+
+<span class="comment">// Unfollow one user with delay</span>
+async function unfollowOne(button) {
+  button.click(); <span class="comment">// Click "Following"</span>
+
+  await delay(500); <span class="comment">// Wait for modal</span>
+
+  <span class="comment">// Click confirm button</span>
+  const confirmBtn = document.querySelector(
+    'button[data-testid="confirmationSheetConfirm"]'
+  );
+
+  if (confirmBtn) confirmBtn.click();
+
+  <span class="comment">// Random delay between unfollows (30-60s)</span>
+  await delay(30000 + Math.random() * 30000);
+}
+            </div>
+
+            <div class="button-demo">
+                <button class="btn-primary" onclick="runDemo()">▶ Run Demo</button>
+                <button class="btn-secondary" onclick="stopDemo()">⏸ Stop Demo</button>
+                <button class="btn-secondary" onclick="clearLogs()">🗑 Clear</button>
+            </div>
+
+            <div class="demo-output" id="output">
+                <div style="color: #999;">Click "Run Demo" to simulate the unfollow process...</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>✨ Advantages Over Tauri</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                <div>
+                    <strong>❌ Tauri Issues:</strong>
+                    <ul style="margin-top: 10px; padding-left: 20px;">
+                        <li>Requires Rust toolchain</li>
+                        <li>GTK dependencies on Linux</li>
+                        <li>Complex webview injection</li>
+                        <li>Hard to debug</li>
+                        <li>Large setup overhead</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>✅ Chrome Extension:</strong>
+                    <ul style="margin-top: 10px; padding-left: 20px;">
+                        <li>Just JavaScript!</li>
+                        <li>Works everywhere Chrome runs</li>
+                        <li>Native DOM access</li>
+                        <li>Easy DevTools debugging</li>
+                        <li>Install in 2 clicks</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-success">
+            <strong>✅ Next Step:</strong> Convert this to a full Chrome Extension with the refactored React UI!
+        </div>
+    </div>
+
+    <script>
+        let demoRunning = false;
+        let demoInterval = null;
+
+        // Simulated usernames for demo
+        const demoUsers = [
+            'user123', 'techguru', 'developer_pro', 'coding_wizard',
+            'javascript_ninja', 'react_master', 'webdev_expert', 'tech_enthusiast'
+        ];
+
+        let currentIndex = 0;
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function addLog(message, type = 'info') {
+            const output = document.getElementById('output');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            output.appendChild(logEntry);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('output').innerHTML = '';
+            addLog('Logs cleared', 'info');
+        }
+
+        async function simulateUnfollow(username) {
+            addLog(`🔍 Found user: @${username}`, 'info');
+            await delay(500);
+
+            addLog(`  ↪ Clicking "Following" button...`, 'info');
+            await delay(300);
+
+            addLog(`  ↪ Waiting for confirmation modal...`, 'info');
+            await delay(200);
+
+            addLog(`  ↪ Clicking "Unfollow" confirmation...`, 'info');
+            await delay(300);
+
+            addLog(`✅ Successfully unfollowed @${username}`, 'success');
+            addLog(`⏱ Waiting 3s before next action...`, 'info');
+        }
+
+        async function runDemo() {
+            if (demoRunning) {
+                addLog('⚠ Demo already running!', 'error');
+                return;
+            }
+
+            demoRunning = true;
+            clearLogs();
+            addLog('🚀 Starting unfollow automation demo...', 'info');
+            addLog('ℹ This is a simulation - no actual unfollowing happens', 'info');
+            await delay(1000);
+
+            for (let i = 0; i < 3 && demoRunning; i++) {
+                const username = demoUsers[currentIndex % demoUsers.length];
+                await simulateUnfollow(username);
+                currentIndex++;
+
+                if (demoRunning) {
+                    await delay(3000); // 3s delay between users for demo
+                }
+            }
+
+            if (demoRunning) {
+                addLog('✨ Demo completed! This would continue for all users in real extension.', 'success');
+            }
+
+            demoRunning = false;
+        }
+
+        function stopDemo() {
+            if (!demoRunning) {
+                addLog('⚠ No demo running', 'error');
+                return;
+            }
+
+            demoRunning = false;
+            addLog('⏸ Demo stopped by user', 'info');
+        }
+
+        // Initialize
+        addLog('Ready! Click "Run Demo" to see how it works.', 'info');
+    </script>
+</body>
+</html>
