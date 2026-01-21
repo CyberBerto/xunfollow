@@ -1,165 +1,283 @@
-# XUnfollow - Batch Unfollow for X (Twitter)
+# XUnfollow - Chrome Extension for X (Twitter)
 
-> **🎉 Now Available as a Chrome Extension!** No complex setup, just install and go.
+Automatically batch unfollow users on X (Twitter) with smart rate limiting and easy controls.
 
-Automatically unfollow users on X (Twitter) with smart rate limiting and easy controls.
+**Simple. Fast. No setup required.**
+
+![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-blue?style=flat-square&logo=googlechrome)
+![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+![Size](https://img.shields.io/badge/Size-56KB-orange?style=flat-square)
+
+---
 
 ## 🚀 Quick Start
 
-### Chrome Extension (Recommended)
+### 1. Install the Extension
 
-The easiest way to use XUnfollow:
+```bash
+# Clone this repository
+git clone https://github.com/CyberBerto/xunfollow.git
+cd xunfollow
+```
 
-1. **Install the extension:**
-   - Open Chrome and go to `chrome://extensions/`
-   - Enable "Developer mode" (top right toggle)
-   - Click "Load unpacked"
-   - Select the `extension-chrome` folder from this repo
+In Chrome:
+1. Open `chrome://extensions/`
+2. Enable **"Developer mode"** (toggle in top right)
+3. Click **"Load unpacked"**
+4. Select the `extension-chrome` folder
+5. Done! ✅
 
-2. **Use it:**
-   - Go to https://x.com and log in
-   - Navigate to your Following list
-   - Click the extension icon
-   - Click "Start" and watch it work!
+### 2. Use It
 
-📖 **[Full Extension Guide →](extension-chrome/README.md)**
+1. Go to [x.com](https://x.com) and log in
+2. Navigate to your **Following** list
+3. Click the **XUnfollow** extension icon in your toolbar
+4. Click **"Start"** and watch it work!
 
-### Try the Demo First
+That's it! No build process, no dependencies, no complicated setup.
 
-Not ready to install? Try the interactive demo:
+---
+
+## ✨ Features
+
+- 🎯 **Batch Unfollow** - Automate unfollowing on X.com
+- 🛡️ **Smart Rate Limiting** - Daily, hourly, and session limits to stay safe
+- ⏱️ **Random Delays** - 30-60s delays to appear human
+- ⏸️ **Pause/Resume/Stop** - Full control at any time
+- 📊 **Activity Log** - Real-time tracking with timestamps
+- 💾 **Export History** - Download your activity as CSV
+- 🔒 **100% Local** - No external servers, all data stays in your browser
+- ⚙️ **Customizable** - Adjust limits and delays to your preference
+
+---
+
+## 🎮 Try the Demo First
+
+Not ready to install? See how it works with the interactive demo:
 
 ```bash
 open poc-demo/unfollow-demo.html
 ```
 
-This shows how the automation works without any installation.
-
-## ✨ Features
-
-- ✅ **Batch unfollow** - Automate unfollowing on X.com
-- ✅ **Smart rate limiting** - Daily, hourly, and session limits
-- ✅ **Random delays** - Appear human (30-60s between actions)
-- ✅ **Pause/Resume** - Full control at any time
-- ✅ **Activity log** - Track all actions with timestamps
-- ✅ **Export history** - Download your activity as CSV
-- ✅ **No external servers** - Everything runs locally
-
-## 📁 What's in This Repo
-
-```
-xunfollow/
-├── extension-chrome/    ⭐ Chrome Extension (recommended)
-├── poc-demo/           📺 Interactive demo
-├── src/                🔧 React frontend (Tauri version)
-├── src-tauri/          🦀 Rust backend (Tauri version)
-└── docs/               📚 Documentation
-```
-
-## 🎯 Chrome Extension vs Tauri
-
-| Feature | Chrome Extension | Tauri Desktop App |
-|---------|-----------------|-------------------|
-| **Setup** | 2 minutes | 30+ minutes |
-| **Requirements** | Just Chrome | Rust + GTK + Build tools |
-| **Size** | 50 KB | 10+ MB |
-| **Updates** | Automatic | Manual rebuild |
-| **Debugging** | Chrome DevTools | Complex |
-| **Works on** | All platforms | Needs platform builds |
-
-**Recommendation:** Use the Chrome Extension unless you specifically need a desktop app.
-
-## 📖 Documentation
-
-- **[Chrome Extension Guide](extension-chrome/README.md)** - How to install and use
-- **[POC Demo](poc-demo/unfollow-demo.html)** - Interactive demo
-- **[Migration Guide](CHROME_EXTENSION_GUIDE.md)** - Why we moved from Tauri
-- **[Refactoring Guide](REFACTORING.md)** - Code improvements
-
-## 🛠️ Development
-
-### Chrome Extension
-
-```bash
-# Edit the code
-cd extension-chrome
-vim popup.js
-
-# Reload in Chrome
-# Go to chrome://extensions/ → Click reload icon
-
-# Test
-# Click extension icon on x.com
-```
-
-No build step needed - just edit and reload!
-
-### Tauri App (Legacy)
-
-If you still want to build the Tauri version:
-
-```bash
-# Install dependencies
-npm install
-
-# Run in development
-npm run tauri dev
-
-# Build for production
-npm run tauri build
-```
-
-**Note:** Requires Rust toolchain and system dependencies. See [Tauri docs](https://tauri.app/v1/guides/getting-started/prerequisites) for setup.
-
-## ⚙️ Settings
-
-Customize in the extension popup:
-
-- **Daily Limit**: 50 (max unfollows per day)
-- **Hourly Limit**: 30 (max unfollows per hour)
-- **Session Limit**: 25 (unfollows before stopping)
-- **Min/Max Delay**: 30-60 seconds (random delay between actions)
-
-## 🛡️ Safety
-
-- ✅ Built-in rate limiting
-- ✅ Random delays to appear human
-- ✅ Can pause/stop anytime
-- ✅ Activity logging
-- ✅ No data sent to external servers
-
-**Warning:** Batch unfollowing may violate X's Terms of Service. Use conservative settings and at your own risk.
-
-## 🤝 Contributing
-
-Contributions welcome!
-
-1. Fork the repo
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📋 Branches
-
-- **`main`** - Original Tauri app
-- **`claude/test-refactor-code-cXjvC`** - Chrome Extension + Refactored code (you are here)
-
-## 📄 License
-
-MIT License - See LICENSE file for details
-
-## 🆘 Support
-
-- **Issues:** [GitHub Issues](https://github.com/CyberBerto/xunfollow/issues)
-- **Questions:** Open a discussion or issue
-
-## ⚡ Quick Links
-
-- [Install Chrome Extension](extension-chrome/) - Start here!
-- [View Demo](poc-demo/unfollow-demo.html) - See how it works
-- [Read Full Guide](extension-chrome/README.md) - Complete documentation
-- [Migration Story](CHROME_EXTENSION_GUIDE.md) - Why Chrome Extension?
+Or just drag `poc-demo/unfollow-demo.html` into your browser!
 
 ---
 
-**Made with ❤️ for people tired of manually unfollowing**
+## 📖 How It Works
+
+1. **Content Script** runs on X.com and finds "Following" buttons
+2. **Clicks buttons** with random delays between actions
+3. **Confirms unfollows** in the modal that appears
+4. **Logs everything** to the activity log
+5. **Respects limits** - stops when daily/hourly/session limits are reached
+
+Simple, effective, and safe.
+
+---
+
+## ⚙️ Settings
+
+Customize the extension to your needs:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| **Daily Limit** | 50 | Max unfollows per day |
+| **Hourly Limit** | 30 | Max unfollows per hour |
+| **Session Limit** | 25 | Unfollows before automatic break |
+| **Min Delay** | 30s | Minimum delay between unfollows |
+| **Max Delay** | 60s | Maximum delay between unfollows |
+
+**Tip:** Use longer delays (60-120s) for safer operation.
+
+---
+
+## 🛡️ Safety Features
+
+- ✅ **Built-in rate limiting** - Prevents hitting X's limits
+- ✅ **Random delays** - Makes automation appear human
+- ✅ **Pause/stop anytime** - Full control over the process
+- ✅ **Activity logging** - See exactly what happened
+- ✅ **Local storage only** - No data sent anywhere
+
+**⚠️ Warning:** Batch unfollowing may violate X's Terms of Service. Use conservative settings and at your own risk.
+
+---
+
+## 📁 Repository Structure
+
+```
+xunfollow/
+├── extension-chrome/          Chrome Extension
+│   ├── manifest.json         Extension configuration
+│   ├── content.js           X.com automation script
+│   ├── background.js        Service worker
+│   ├── popup.html/css/js    Extension UI
+│   └── README.md            Detailed user guide
+│
+├── poc-demo/                Interactive demo
+│   └── unfollow-demo.html   Standalone demo page
+│
+└── Documentation
+    ├── README.md            This file
+    ├── ARCHITECTURE.md      Technical overview
+    └── CHROME_EXTENSION_GUIDE.md  Why Chrome Extension?
+```
+
+---
+
+## 🛠️ Development
+
+Want to modify the extension?
+
+```bash
+# Edit any file in extension-chrome/
+vim extension-chrome/popup.js
+
+# Reload the extension
+# Go to chrome://extensions/ → Click the reload icon
+
+# Test your changes
+# Click the extension icon on x.com
+```
+
+**No build process!** Just edit JavaScript and reload. That's it.
+
+### Key Files
+
+- `content.js` - Runs on X.com, does the unfollowing
+- `background.js` - Manages state and settings
+- `popup.js` - Extension popup UI logic
+- `popup.html/css` - Extension popup structure and styling
+
+---
+
+## 📚 Documentation
+
+- **[Extension User Guide](extension-chrome/README.md)** - Complete installation and usage instructions
+- **[Architecture Overview](ARCHITECTURE.md)** - How the extension works
+- **[Chrome Extension Guide](CHROME_EXTENSION_GUIDE.md)** - Why we built this as a Chrome Extension
+- **[Interactive Demo](poc-demo/unfollow-demo.html)** - See it in action without installing
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Here's how:
+
+1. **Fork** this repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Make** your changes
+4. **Test** thoroughly on X.com
+5. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+6. **Push** to your branch (`git push origin feature/amazing-feature`)
+7. **Open** a Pull Request
+
+### Contribution Ideas
+
+- 🎨 Improve the UI/UX
+- 🐛 Fix bugs or edge cases
+- 📝 Improve documentation
+- ✨ Add new features (with conservative defaults)
+- 🌐 Add Firefox support (WebExtensions)
+- 🧪 Add automated tests
+
+---
+
+## 🔧 Troubleshooting
+
+### Extension doesn't start
+- Make sure you're on x.com or twitter.com
+- Refresh the page
+- Check console for errors (F12)
+
+### No "Following" buttons found
+- Navigate to your Following list page
+- Scroll down to load more users
+- X may have changed their UI - check for selector updates needed
+
+### Rate limit errors from X
+- Stop the extension immediately
+- Use more conservative settings (longer delays, lower limits)
+- Wait 24 hours before trying again
+
+### Need help?
+Open an [issue](https://github.com/CyberBerto/xunfollow/issues) with:
+- What you were trying to do
+- What happened
+- Browser console errors (F12 → Console tab)
+
+---
+
+## 📜 License
+
+MIT License - see [LICENSE](LICENSE) file for details
+
+Free to use, modify, and distribute. No warranty provided.
+
+---
+
+## ⚠️ Disclaimer
+
+This tool is for educational purposes. Use at your own risk.
+
+- Batch unfollowing may violate X's Terms of Service
+- Your account could be restricted or banned
+- We recommend conservative settings (long delays, low limits)
+- The authors are not responsible for any account issues
+
+**Use responsibly.**
+
+---
+
+## 🌟 Why This Extension?
+
+- **No Rust or complex build tools** - Pure JavaScript
+- **No external dependencies** - Self-contained
+- **No data collection** - Everything stays local
+- **Easy to audit** - Simple, readable code
+- **Easy to modify** - No compilation needed
+- **Works everywhere** - Any OS with Chrome
+
+Built for simplicity and transparency.
+
+---
+
+## 📊 Stats
+
+- **Size:** 56 KB (extension) + 15 KB (demo)
+- **Files:** 10 files
+- **Languages:** JavaScript, HTML, CSS
+- **Dependencies:** None (uses browser APIs only)
+- **Build Time:** 0 seconds (no build needed!)
+
+---
+
+## 🚀 Coming Soon
+
+- [ ] Publish to Chrome Web Store
+- [ ] Firefox support
+- [ ] Whitelist specific users
+- [ ] Import/export following lists
+- [ ] Scheduling (unfollow at specific times)
+- [ ] Analytics dashboard
+
+---
+
+## 💬 Support
+
+- 🐛 **Report bugs:** [GitHub Issues](https://github.com/CyberBerto/xunfollow/issues)
+- 💡 **Feature requests:** [GitHub Issues](https://github.com/CyberBerto/xunfollow/issues)
+- 📖 **Documentation:** Check the [docs](extension-chrome/README.md)
+- 💬 **Questions:** Open a [discussion](https://github.com/CyberBerto/xunfollow/discussions)
+
+---
+
+## 🎉 Acknowledgments
+
+Built with ❤️ for people tired of manually unfollowing hundreds of accounts.
+
+**Star this repo if it helped you!** ⭐
+
+---
+
+**[Get Started →](extension-chrome/README.md)** | **[View Demo →](poc-demo/unfollow-demo.html)** | **[Report Issue →](https://github.com/CyberBerto/xunfollow/issues)**
