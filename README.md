@@ -268,7 +268,7 @@ Built for simplicity and transparency.
 - 🐛 **Report bugs:** [GitHub Issues](https://github.com/CyberBerto/xunfollow/issues)
 - 💡 **Feature requests:** [GitHub Issues](https://github.com/CyberBerto/xunfollow/issues)
 - 📖 **Documentation:** Check the [docs](extension-chrome/README.md)
-- 💬 **Questions:** Open a [discussion](https://github.com/CyberBerto/xunfollow/discussions)
+- 💬 **Questions:** Open a [discussion](https://github.com/discussions)
 
 ---
 
