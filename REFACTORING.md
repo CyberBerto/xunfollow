@@ -1,6 +1,8 @@
 # XUnfollow Refactoring Documentation
 
-This document describes the refactoring changes made to improve code quality, maintainability, and organization.
+> **📜 Historical Document:** This describes the Tauri app refactoring work. The Tauri codebase has since been removed in favor of the Chrome Extension. This document is kept for historical reference.
+
+This document describes the refactoring changes made to improve code quality, maintainability, and organization of the legacy Tauri desktop app.
 
 ## Summary
 
