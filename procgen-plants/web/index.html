@@ -1,0 +1,1413 @@
+<title>Growth Chamber</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Familjen+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+/* ------------------------------------------------------------------ *
+ * Tokens. The bare :root block is the complete light palette; the two
+ * blocks under it redefine tokens only, so the un-stamped (system)
+ * state, an explicit dark choice, and an explicit light choice all
+ * resolve as a full set.
+ * ------------------------------------------------------------------ */
+:root {
+  --ground:      #E9EDE4;
+  --surface:     #F8FAF5;
+  --surface-sunk:#E2E8DA;
+  --line:        #D0D9C6;
+  --line-soft:   #E0E6D8;
+  --ink:         #161E19;
+  --ink-dim:     #5A6961;
+  --ink-faint:   #8B9990;
+  --accent:      #37702F;
+  --accent-soft: #DCEBD3;
+  --warm:        #A85E1A;
+  --shadow:      0 1px 2px rgba(22, 30, 25, .06), 0 8px 24px -12px rgba(22, 30, 25, .18);
+
+  /* The scene inside the canvas gets its own palette, also tokenised so
+     the drawing code has exactly one source of truth for color. */
+  --scene-sky-top:     #B4CFDA;
+  --scene-sky-bottom:  #E4EDDC;
+  --scene-hill-far:    #A9C0B0;
+  --scene-hill-mid:    #8FAF97;
+  --scene-ground:      #87A87B;
+  --scene-ground-edge: #ABC998;
+  --scene-soil:        #64775A;
+  --scene-sun:         #FFF7DA;
+
+  --rail: 358px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:      #0B1210;
+    --surface:     #131C18;
+    --surface-sunk:#0E1613;
+    --line:        #22302A;
+    --line-soft:   #1A2721;
+    --ink:         #E2EBE4;
+    --ink-dim:     #8AA095;
+    --ink-faint:   #62766C;
+    --accent:      #86C96E;
+    --accent-soft: #1D3021;
+    --warm:        #D9903F;
+    --shadow:      0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -12px rgba(0, 0, 0, .6);
+
+    --scene-sky-top:     #0D1920;
+    --scene-sky-bottom:  #24352C;
+    --scene-hill-far:    #16241D;
+    --scene-hill-mid:    #1C2F25;
+    --scene-ground:      #24392C;
+    --scene-ground-edge: #40664B;
+    --scene-soil:        #121C17;
+    --scene-sun:         #DCEBC6;
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground:      #0B1210;
+  --surface:     #131C18;
+  --surface-sunk:#0E1613;
+  --line:        #22302A;
+  --line-soft:   #1A2721;
+  --ink:         #E2EBE4;
+  --ink-dim:     #8AA095;
+  --ink-faint:   #62766C;
+  --accent:      #86C96E;
+  --accent-soft: #1D3021;
+  --warm:        #D9903F;
+  --shadow:      0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -12px rgba(0, 0, 0, .6);
+
+  --scene-sky-top:     #0D1920;
+  --scene-sky-bottom:  #24352C;
+  --scene-hill-far:    #16241D;
+  --scene-hill-mid:    #1C2F25;
+  --scene-ground:      #24392C;
+  --scene-ground-edge: #40664B;
+  --scene-soil:        #121C17;
+  --scene-sun:         #DCEBC6;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: "Familjen Grotesk", ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---- shell ---- */
+.app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--rail);
+  gap: 18px;
+  padding: 18px;
+  min-height: 100vh;
+  align-items: start;
+}
+
+.chamber { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+/* ---- masthead ---- */
+.masthead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.wordmark {
+  font-family: Syne, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 21px;
+  letter-spacing: -.02em;
+  margin: 0;
+}
+.wordmark span { color: var(--accent); }
+.tagline { color: var(--ink-dim); font-size: 13px; margin: 0; max-width: 62ch; }
+
+/* ---- viewport ---- */
+.viewport {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--scene-sky-bottom);
+  box-shadow: var(--shadow);
+}
+canvas { display: block; width: 100%; height: min(58vh, 560px); min-height: 300px; }
+
+.readout {
+  position: absolute;
+  top: 12px; left: 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+  pointer-events: none;
+}
+.readout .wk { font-size: 26px; font-weight: 500; color: #fff; letter-spacing: -.02em; }
+.readout .date { font-size: 12px; color: rgba(255, 255, 255, .78); }
+.readout .season {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .12em;
+  padding: 2px 7px; border-radius: 2px;
+  background: rgba(0, 0, 0, .38); color: rgba(255, 255, 255, .92);
+}
+
+.budget-warning {
+  position: absolute; bottom: 10px; left: 14px;
+  font-size: 12px; padding: 4px 9px; border-radius: 3px;
+  background: rgba(0, 0, 0, .55); color: #F2C77A;
+}
+.budget-warning[hidden] { display: none; }
+
+/* ---- transport ---- */
+.transport {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.scrub { position: relative; flex: 1; min-width: 0; }
+.ticks { position: relative; height: 24px; }
+.tick {
+  position: absolute; top: 0; transform: translateX(-50%);
+  font-size: 9px; color: var(--ink-faint); letter-spacing: .08em; text-transform: uppercase;
+}
+.tick::after {
+  content: ""; position: absolute; left: 50%; top: 12px;
+  width: 1px; height: 4px; background: var(--line);
+}
+/* One dot per species, at the week it breaks ground. */
+.sprout {
+  position: absolute; top: 17px;
+  width: 6px; height: 6px; border-radius: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 0 0 1px var(--surface);
+}
+
+/* ---- controls ---- */
+button {
+  font: inherit;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 5px 11px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--ink-faint); }
+button.primary { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+button.play { min-width: 78px; font-variant-numeric: tabular-nums; }
+button.danger:hover { border-color: var(--warm); color: var(--warm); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
+input[type="number"], input[type="text"], textarea, select {
+  font: inherit;
+  width: 100%;
+  color: var(--ink);
+  background: var(--surface-sunk);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 4px 7px;
+}
+input[type="number"] { font-family: "JetBrains Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+textarea { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; line-height: 1.7; resize: vertical; }
+input[type="color"] {
+  width: 100%; height: 26px; padding: 1px;
+  background: var(--surface-sunk);
+  border: 1px solid var(--line); border-radius: 3px; cursor: pointer;
+}
+
+/* ---- rail ---- */
+.rail {
+  display: flex; flex-direction: column; gap: 14px;
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 13px 14px 15px;
+}
+.panel > h2 {
+  font-family: Syne, sans-serif;
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .13em;
+  color: var(--ink-dim);
+  margin: 0 0 11px;
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+}
+
+.species-list { display: flex; flex-direction: column; gap: 3px; margin-bottom: 10px; }
+.species-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  text-align: left;
+  width: 100%;
+}
+.species-row:hover { background: var(--surface-sunk); }
+.species-row[aria-selected="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.swatch { width: 11px; height: 11px; border-radius: 2px; flex: none; }
+.species-row .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.species-row .ct {
+  font-family: "JetBrains Mono", monospace; font-size: 11px;
+  color: var(--ink-faint); font-variant-numeric: tabular-nums;
+}
+
+.row { display: flex; gap: 8px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 10px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px 10px; }
+.field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.field > label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .09em;
+  color: var(--ink-faint);
+}
+.field .val {
+  font-family: "JetBrains Mono", monospace; font-size: 11px;
+  color: var(--ink-dim); font-variant-numeric: tabular-nums;
+}
+.field-wide { grid-column: 1 / -1; }
+.hint { font-size: 11px; color: var(--ink-faint); margin: 7px 0 0; }
+.hint code {
+  font-family: "JetBrains Mono", monospace;
+  background: var(--surface-sunk); padding: 0 3px; border-radius: 2px;
+}
+.error { color: var(--warm); font-size: 11px; margin: 6px 0 0; min-height: 1em; }
+
+details > summary {
+  cursor: pointer; list-style: none;
+  font-size: 11px; color: var(--ink-dim);
+  padding: 3px 0;
+}
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "▸ "; color: var(--ink-faint); }
+details[open] > summary::before { content: "▾ "; }
+
+.legend { font-family: "JetBrains Mono", monospace; font-size: 11px; line-height: 1.9; color: var(--ink-dim); }
+.legend b { color: var(--accent); font-weight: 500; }
+
+@media (max-width: 980px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .rail { max-height: none; overflow: visible; }
+  canvas { height: 52vh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+
+<div class="app">
+  <main class="chamber">
+    <div class="masthead">
+      <div>
+        <h1 class="wordmark">Growth <span>Chamber</span></h1>
+        <p class="tagline">Every plant here is a rewriting rule. Edit the grammar on the right and the hillside regrows.</p>
+      </div>
+      <div class="row">
+        <button id="reseed">Reseed hillside</button>
+      </div>
+    </div>
+
+    <div class="viewport">
+      <canvas id="scene"></canvas>
+      <div class="readout">
+        <span class="wk" id="ro-week">wk 0.0</span>
+        <span class="date" id="ro-date">March 1</span>
+        <span class="season" id="ro-season">early spring</span>
+      </div>
+      <div class="budget-warning" id="budget" hidden></div>
+    </div>
+
+    <div class="transport">
+      <button class="play primary" id="play">Pause</button>
+      <div class="scrub">
+        <div class="ticks" id="ticks"></div>
+        <input type="range" id="time" min="0" max="40" step="0.05" value="0" aria-label="Week">
+      </div>
+      <label class="field" style="flex:none">
+        <span class="val" id="speed-val">2.5 wk/s</span>
+        <input type="range" id="speed" min="0.25" max="12" step="0.25" value="2.5"
+               style="width:88px" aria-label="Playback speed">
+      </label>
+    </div>
+  </main>
+
+  <aside class="rail">
+    <section class="panel">
+      <h2>Species <span class="val" id="species-count"></span></h2>
+      <div class="species-list" id="species-list" role="listbox" aria-label="Species"></div>
+      <div class="row">
+        <button id="add-species">Add</button>
+        <button id="dup-species">Duplicate</button>
+        <button id="del-species" class="danger">Delete</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Grammar</h2>
+      <div class="field field-wide">
+        <label for="f-name">Name</label>
+        <input type="text" id="f-name">
+      </div>
+      <div class="field field-wide" style="margin-top:9px">
+        <label for="f-axiom">Axiom — the starting string</label>
+        <input type="text" id="f-axiom" spellcheck="false"
+               style="font-family:'JetBrains Mono',monospace">
+      </div>
+      <div class="field field-wide" style="margin-top:9px">
+        <label for="f-rules">Rules — one per line, <code>symbol = replacement</code></label>
+        <textarea id="f-rules" rows="5" spellcheck="false"></textarea>
+      </div>
+      <p class="error" id="rule-error"></p>
+      <div class="grid2" style="margin-top:4px">
+        <div class="field">
+          <label for="f-iterations">Iterations <span class="val" id="v-iterations"></span></label>
+          <input type="range" id="f-iterations" min="1" max="16" step="1">
+        </div>
+        <div class="field">
+          <label for="f-angle">Turn angle <span class="val" id="v-angle"></span></label>
+          <input type="range" id="f-angle" min="1" max="90" step="0.5">
+        </div>
+      </div>
+      <p class="hint">
+        <b>Legend</b> — <code>F</code> draw forward · <code>+</code> <code>-</code> turn ·
+        <code>[</code> <code>]</code> branch · <code>L</code> leaf · <code>O</code> flower ·
+        any other letter is a placeholder that only drives the rewriting.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Form</h2>
+      <div class="grid3">
+        <div class="field">
+          <label for="f-step">Step</label>
+          <input type="number" id="f-step" min="0.5" max="40" step="0.2">
+        </div>
+        <div class="field">
+          <label for="f-falloff">Falloff</label>
+          <input type="number" id="f-falloff" min="0.4" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label for="f-jitter">Wobble°</label>
+          <input type="number" id="f-jitter" min="0" max="30" step="0.5">
+        </div>
+        <div class="field">
+          <label for="f-thick">Stem px</label>
+          <input type="number" id="f-thick" min="0.3" max="20" step="0.1">
+        </div>
+        <div class="field">
+          <label for="f-taper">Taper</label>
+          <input type="number" id="f-taper" min="0.4" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label for="f-leafsize">Leaf px</label>
+          <input type="number" id="f-leafsize" min="0.5" max="20" step="0.1">
+        </div>
+        <div class="field">
+          <label for="f-scale" title="Mature height as a fraction of the view">Height</label>
+          <input type="number" id="f-scale" min="0.01" max="1" step="0.01">
+        </div>
+        <div class="field">
+          <label for="f-variance">Variance</label>
+          <input type="number" id="f-variance" min="0" max="1" step="0.02">
+        </div>
+        <div class="field">
+          <label for="f-weight">Frequency</label>
+          <input type="number" id="f-weight" min="0" max="10" step="0.1">
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Calendar</h2>
+      <div class="grid3">
+        <div class="field">
+          <label for="f-germ">Sprouts wk</label>
+          <input type="number" id="f-germ" min="0" max="52" step="0.5">
+        </div>
+        <div class="field">
+          <label for="f-spread">Spread</label>
+          <input type="number" id="f-spread" min="0" max="20" step="0.5">
+        </div>
+        <div class="field">
+          <label for="f-mature">Matures in</label>
+          <input type="number" id="f-mature" min="0.5" max="52" step="0.5">
+        </div>
+      </div>
+      <div class="field field-wide" style="margin-top:10px">
+        <label for="f-flower">Blooms at <span class="val" id="v-flower"></span> of growth</label>
+        <input type="range" id="f-flower" min="0" max="1.1" step="0.01">
+      </div>
+      <div class="grid3" style="margin-top:11px">
+        <div class="field">
+          <label for="f-stem-color">Stem</label>
+          <input type="color" id="f-stem-color">
+        </div>
+        <div class="field">
+          <label for="f-leaf-color">Leaf</label>
+          <input type="color" id="f-leaf-color">
+        </div>
+        <div class="field">
+          <label for="f-flower-color">Bloom</label>
+          <input type="color" id="f-flower-color">
+        </div>
+      </div>
+      <div class="field field-wide" style="margin-top:9px">
+        <label for="f-autumn-color">Autumn leaf</label>
+        <input type="color" id="f-autumn-color">
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Hillside</h2>
+      <div class="grid2">
+        <div class="field">
+          <label for="w-seed">Seed</label>
+          <input type="number" id="w-seed" min="0" step="1">
+        </div>
+        <div class="field">
+          <label for="w-count">Plants</label>
+          <input type="number" id="w-count" min="1" max="60" step="1">
+        </div>
+      </div>
+      <div class="field field-wide" style="margin-top:10px">
+        <label for="w-rough">Terrain roughness <span class="val" id="v-rough"></span></label>
+        <input type="range" id="w-rough" min="0" max="1.6" step="0.02">
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <div class="field">
+          <label for="w-weeks">Timeline weeks</label>
+          <input type="number" id="w-weeks" min="4" max="120" step="1">
+        </div>
+        <div class="field">
+          <label for="w-autumn">Autumn week</label>
+          <input type="number" id="w-autumn" min="0" max="200" step="1">
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Take it with you</h2>
+      <p class="hint" style="margin-top:0">
+        This page and the Rust build read the same file. Copy your edits into
+        <code>rust/species.json</code> and <code>cargo run</code> picks them up on save.
+      </p>
+      <div class="row" style="margin-top:10px">
+        <button id="copy-json" class="primary">Copy species.json</button>
+        <button id="reset-all" class="danger">Reset all</button>
+      </div>
+      <details style="margin-top:10px">
+        <summary>Show JSON</summary>
+        <textarea id="json-out" rows="12" readonly spellcheck="false" style="margin-top:6px"></textarea>
+      </details>
+    </section>
+  </aside>
+</div>
+
+<script>
+"use strict";
+
+/* ==================================================================
+ * 1. Deterministic randomness
+ *    Same algorithm as rust/src/rng.rs, so a seed produces the same
+ *    hillside in both builds.
+ * ================================================================== */
+
+function makeRng(seed) {
+  let s = (Math.imul(seed >>> 0, 747796405) + 2891336453 | 1) >>> 0;
+  const u32 = () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let z = s;
+    z = Math.imul(z ^ (z >>> 15), z | 1) >>> 0;
+    z = (z ^ (z + Math.imul(z ^ (z >>> 7), z | 61))) >>> 0;
+    return (z ^ (z >>> 14)) >>> 0;
+  };
+  const unit = () => u32() / 4294967296;
+  return {
+    unit,
+    range: (lo, hi) => lo + unit() * (hi - lo),
+    jitter: (a) => (unit() * 2 - 1) * a,
+    weightedIndex(weights) {
+      const total = weights.reduce((a, w) => a + Math.max(0, w), 0);
+      if (total <= 0) return 0;
+      let target = unit() * total;
+      for (let i = 0; i < weights.length; i++) {
+        target -= Math.max(0, weights[i]);
+        if (target <= 0) return i;
+      }
+      return weights.length - 1;
+    },
+  };
+}
+
+function hashToUnit(i, seed) {
+  let h = (Math.imul(i >>> 0, 374761393) + Math.imul(seed >>> 0, 668265263)) >>> 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+function valueNoise1d(x, seed) {
+  const i = Math.floor(x), f = x - i;
+  const a = hashToUnit(i, seed), b = hashToUnit(i + 1, seed);
+  const t = f * f * (3 - 2 * f);
+  return a + (b - a) * t;
+}
+
+function fbm1d(x, seed, octaves) {
+  let total = 0, amp = 1, freq = 1, norm = 0;
+  for (let o = 0; o < octaves; o++) {
+    total += valueNoise1d(x * freq, (seed + o * 977) >>> 0) * amp;
+    norm += amp; amp *= 0.5; freq *= 2;
+  }
+  return total / norm;
+}
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const smoothstep = (t) => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
+const smoothRange = (a, b, x) => (Math.abs(b - a) < 1e-6 ? (x >= b ? 1 : 0) : smoothstep((x - a) / (b - a)));
+
+/* ==================================================================
+ * 2. The L-system — string rewriting
+ *    Start with the axiom; on every pass replace EVERY symbol at once.
+ *      A -> AB, B -> A   gives   A, AB, ABA, ABAAB, ...
+ * ================================================================== */
+
+const MAX_LEN = 400000;
+const MAX_SEGMENTS = 9000;
+
+function expand(axiom, rules, iterations) {
+  let current = axiom;
+  let truncated = false;
+  for (let n = 0; n < iterations; n++) {
+    // Measure the next pass before building it: growth is exponential and
+    // one careless rule would otherwise hang the tab.
+    let projected = 0;
+    for (const c of current) projected += rules[c] ? rules[c].length : 1;
+    if (projected > MAX_LEN) { truncated = true; break; }
+
+    let next = "";
+    for (const c of current) next += rules[c] !== undefined ? rules[c] : c;
+    current = next;
+  }
+  return { string: current, truncated };
+}
+
+/* ==================================================================
+ * 3. The turtle — string to geometry
+ *    Plant-local coordinates: base at (0,0), +y points UP. Every segment
+ *    stores `order`, the number of forward steps before it along its own
+ *    branch, which is what lets the plant grow outward tip by tip.
+ * ================================================================== */
+
+function buildGeometry(sp, rng) {
+  const { string, truncated } = expand(sp.axiom, sp.rules, sp.iterations);
+  const geo = { segments: [], leaves: [], flowers: [], maxOrder: 0, maxThick: 0, height: 0, truncated };
+
+  const turn = sp.angleDeg * Math.PI / 180;
+  const wobble = sp.angleJitterDeg * Math.PI / 180;
+
+  let st = {
+    x: 0, y: 0, angle: 0,
+    len: Math.max(0.05, sp.stepLen),
+    thick: Math.max(0.2, sp.baseThickness),
+    order: 0,
+  };
+  const stack = [];
+
+  for (const c of string) {
+    switch (c) {
+      case "F": case "G": {
+        const x1 = st.x + Math.sin(st.angle) * st.len;
+        const y1 = st.y + Math.cos(st.angle) * st.len;
+        if (geo.segments.length < MAX_SEGMENTS) {
+          geo.segments.push({ x0: st.x, y0: st.y, x1, y1, thick: st.thick, order: st.order });
+          if (st.thick > geo.maxThick) geo.maxThick = st.thick;
+        } else {
+          geo.truncated = true;
+        }
+        st.x = x1; st.y = y1; st.order += 1;
+        if (st.order > geo.maxOrder) geo.maxOrder = st.order;
+        if (y1 > geo.height) geo.height = y1;
+        break;
+      }
+      case "f":
+        st.x += Math.sin(st.angle) * st.len;
+        st.y += Math.cos(st.angle) * st.len;
+        st.order += 1;
+        if (st.order > geo.maxOrder) geo.maxOrder = st.order;
+        break;
+      case "+": st.angle -= turn + rng.jitter(wobble); break;
+      case "-": st.angle += turn + rng.jitter(wobble); break;
+      case "|": st.angle += Math.PI; break;
+      case "[":
+        stack.push({ ...st });
+        st.len *= sp.lenFalloff;
+        st.thick = Math.max(0.35, st.thick * sp.thicknessTaper);
+        break;
+      case "]":
+        // A branch is a side excursion — the main stem resumes exactly where
+        // it left off, including its place on the growth clock.
+        if (stack.length) st = stack.pop();
+        break;
+      case "L":
+        geo.leaves.push({ x: st.x, y: st.y, angle: st.angle, size: sp.leafSize, order: st.order });
+        break;
+      case "O":
+        geo.flowers.push({ x: st.x, y: st.y, angle: st.angle, size: sp.leafSize * 0.9, order: st.order });
+        break;
+      default: break;
+    }
+  }
+  return geo;
+}
+
+/** How much of a segment is visible at growth clock `t`; 0 means not yet. */
+const reveal = (order, t) => clamp(t - order, 0, 1);
+
+/* ==================================================================
+ * 4. The landscape
+ * ================================================================== */
+
+function generateLandscape(garden) {
+  const w = garden.world;
+  const rng = makeRng(w.seed);
+  const plants = [];
+  let truncated = false;
+
+  if (!garden.species.length) return { plants, truncated, seed: w.seed, roughness: w.terrainRoughness };
+
+  const weights = garden.species.map((s) => s.weight);
+  const count = clamp(Math.round(w.plantCount), 1, 60);
+
+  // Give every species at least one individual before filling the rest in by
+  // weight — otherwise an unlucky seed silently drops a species you just
+  // finished editing, which is baffling when you are tuning rules.
+  const assignment = [];
+  for (let i = 0; i < count; i++) {
+    assignment.push(i < garden.species.length ? i : rng.weightedIndex(weights));
+  }
+  // Shuffle so the guaranteed ones are not all bunched on the left.
+  for (let i = assignment.length - 1; i > 0; i--) {
+    const j = Math.floor(rng.unit() * (i + 1));
+    [assignment[i], assignment[j]] = [assignment[j], assignment[i]];
+  }
+
+  for (let i = 0; i < count; i++) {
+    const idx = Math.min(assignment[i], garden.species.length - 1);
+    const sp = garden.species[idx];
+
+    // Jittered slots rather than uniform random, so plants do not clump.
+    const slot = (i + 0.5) / count;
+    const u = clamp(slot + rng.jitter(0.45 / count), 0.02, 0.98);
+
+    const depth = Math.pow(rng.unit(), 1.4);
+    const matureHeight = Math.max(0.01, sp.matureHeight * (1 + rng.jitter(sp.heightVariance)));
+    const germ = sp.germinationWeek + rng.unit() * sp.germinationSpread;
+    const mature = sp.weeksToMature * (1 + rng.jitter(0.15));
+
+    // Own generator per plant, so its turn-wobble does not depend on how
+    // many plants were drawn before it.
+    const plantRng = makeRng((w.seed ^ Math.imul(i + 1, 0x9E3779B9)) >>> 0);
+    const geometry = buildGeometry(sp, plantRng);
+    truncated = truncated || geometry.truncated;
+
+    plants.push({
+      speciesIndex: idx, u, depth, matureHeight,
+      germinationWeek: germ, weeksToMature: mature,
+      flip: rng.unit() < 0.5,
+      geometry,
+    });
+  }
+
+  plants.sort((a, b) => b.depth - a.depth); // far to near
+  return { plants, truncated, seed: w.seed, roughness: w.terrainRoughness };
+}
+
+function groundAt(land, u) {
+  const n = fbm1d(u * 3.2 + 11, land.seed, 4) - 0.5;
+  return 0.80 - 0.13 * land.roughness * n * 2;
+}
+
+function plantGrowth(p, week) {
+  return smoothstep(clamp((week - p.germinationWeek) / Math.max(0.1, p.weeksToMature), 0, 1));
+}
+
+/* ==================================================================
+ * 5. Colour helpers
+ * ================================================================== */
+
+function hexToRgb(hex) {
+  const h = String(hex).trim().replace("#", "");
+  if (h.length === 3) {
+    return [parseInt(h[0] + h[0], 16), parseInt(h[1] + h[1], 16), parseInt(h[2] + h[2], 16)];
+  }
+  if (h.length === 6) {
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  return [128, 128, 128];
+}
+const mixRgb = (a, b, t) => [
+  a[0] + (b[0] - a[0]) * t,
+  a[1] + (b[1] - a[1]) * t,
+  a[2] + (b[2] - a[2]) * t,
+];
+const css = (c, alpha) =>
+  alpha === undefined
+    ? `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`
+    : `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${alpha})`;
+
+let palette = null;
+function refreshPalette() {
+  const cs = getComputedStyle(document.documentElement);
+  const t = (name) => hexToRgb(cs.getPropertyValue(name).trim() || "#888888");
+  palette = {
+    skyTop: t("--scene-sky-top"),
+    skyBottom: t("--scene-sky-bottom"),
+    hillFar: t("--scene-hill-far"),
+    hillMid: t("--scene-hill-mid"),
+    ground: t("--scene-ground"),
+    groundEdge: t("--scene-ground-edge"),
+    soil: t("--scene-soil"),
+    sun: t("--scene-sun"),
+  };
+}
+
+/* ==================================================================
+ * 6. Rendering
+ * ================================================================== */
+
+const canvas = document.getElementById("scene");
+const ctx = canvas.getContext("2d");
+let cssW = 0, cssH = 0;
+
+function resizeCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const rect = canvas.getBoundingClientRect();
+  cssW = Math.max(1, rect.width);
+  cssH = Math.max(1, rect.height);
+  canvas.width = Math.round(cssW * dpr);
+  canvas.height = Math.round(cssH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function drawScene(garden, land, week) {
+  const w = cssW, h = cssH;
+  ctx.clearRect(0, 0, w, h);
+
+  // sky
+  const sky = ctx.createLinearGradient(0, 0, 0, h);
+  sky.addColorStop(0, css(palette.skyTop));
+  sky.addColorStop(1, css(palette.skyBottom));
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, w, h);
+
+  drawSun(w, h, week, garden.world.totalWeeks);
+  drawHills(land, w, h, 0.86, -0.09, palette.hillFar);
+  drawHaze(land, w, h);
+  drawHills(land, w, h, 0.62, -0.045, palette.hillMid);
+  drawGround(land, w, h);
+
+  for (const p of land.plants) drawPlant(garden, land, p, w, h, week);
+}
+
+function drawSun(w, h, week, totalWeeks) {
+  // The sun tracks the year: low at week 0, high at midsummer, low again.
+  const year = clamp(week / Math.max(1, totalWeeks), 0, 1);
+  const arc = Math.sin(year * Math.PI);
+  const x = w * (0.12 + 0.7 * year);
+  const y = h * (0.52 - 0.34 * arc);
+  const r = h * 0.10;
+  const glow = ctx.createRadialGradient(x, y, 0, x, y, r);
+  glow.addColorStop(0, css(palette.sun, 0.32));
+  glow.addColorStop(1, css(palette.sun, 0));
+  ctx.fillStyle = glow;
+  ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  ctx.beginPath();
+  ctx.arc(x, y, h * 0.014, 0, Math.PI * 2);
+  ctx.fillStyle = css(palette.sun, 0.7);
+  ctx.fill();
+}
+
+function drawHaze(land, w, h) {
+  const top = h * 0.5, bottom = h * 0.85;
+  const haze = ctx.createLinearGradient(0, top, 0, bottom);
+  haze.addColorStop(0, css(palette.skyBottom, 0));
+  haze.addColorStop(0.55, css(palette.skyBottom, 0.55));
+  haze.addColorStop(1, css(palette.skyBottom, 0));
+  ctx.fillStyle = haze;
+  ctx.fillRect(0, top, w, bottom - top);
+}
+
+function drawHills(land, w, h, flatten, lift, color) {
+  const STEPS = 140;
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  for (let i = 0; i <= STEPS; i++) {
+    const u = i / STEPS;
+    ctx.lineTo(u * w, h * (groundAt(land, u * flatten + 0.37) + lift));
+  }
+  ctx.lineTo(w, h);
+  ctx.closePath();
+  ctx.fillStyle = css(color);
+  ctx.fill();
+}
+
+function drawGround(land, w, h) {
+  const STEPS = 220;
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  for (let i = 0; i <= STEPS; i++) {
+    const u = i / STEPS;
+    ctx.lineTo(u * w, h * groundAt(land, u));
+  }
+  ctx.lineTo(w, h);
+  ctx.closePath();
+  // Earth darkens with depth, so the foreground reads as soil rather than
+  // as a flat slab of colour under the plants.
+  const soil = ctx.createLinearGradient(0, h * 0.55, 0, h);
+  soil.addColorStop(0, css(palette.ground));
+  soil.addColorStop(1, css(palette.soil));
+  ctx.fillStyle = soil;
+  ctx.fill();
+
+  // A grass-lit rim along the skyline, kept close in value to the ground.
+  ctx.beginPath();
+  for (let i = 0; i <= STEPS; i++) {
+    const u = i / STEPS;
+    const y = h * groundAt(land, u);
+    if (i === 0) ctx.moveTo(0, y); else ctx.lineTo(u * w, y);
+  }
+  ctx.strokeStyle = css(palette.groundEdge, 0.45);
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+/** Stems are batched into a handful of width buckets so one plant costs a
+ *  few stroke calls instead of thousands. */
+const WIDTH_BUCKETS = 7;
+
+function drawPlant(garden, land, plant, w, h, week) {
+  const growth = plantGrowth(plant, week);
+  if (growth <= 0) return;
+
+  const sp = garden.species[Math.min(plant.speciesIndex, garden.species.length - 1)];
+  const geo = plant.geometry;
+  const t = growth * (geo.maxOrder + 1);
+
+  // A seedling is not just a partial adult — it is physically smaller too.
+  // Species are authored by the height they reach, not by pixel step sizes:
+  // normalise the raw geometry so a mature plant lands on its target height.
+  // That keeps `step` and `falloff` purely about *shape*.
+  const norm = (h * plant.matureHeight) / Math.max(0.001, geo.height);
+  const sizeRamp = 0.30 + 0.70 * growth;
+  const depthScale = 1 - 0.42 * plant.depth;
+  const scale = norm * sizeRamp * depthScale;
+
+  const baseX = plant.u * w;
+  const baseY = h * groundAt(land, plant.u) - h * 0.045 * plant.depth;
+  const flip = plant.flip ? -1 : 1;
+
+  const haze = plant.depth * 0.45;
+  const stem = mixRgb(hexToRgb(sp.stemColor), palette.skyBottom, haze);
+  const autumn = smoothRange(garden.world.autumnWeek, garden.world.autumnWeek + 6, week);
+  const leaf = mixRgb(mixRgb(hexToRgb(sp.leafColor), hexToRgb(sp.autumnColor), autumn), palette.skyBottom, haze);
+  const bloomColor = mixRgb(hexToRgb(sp.flowerColor), palette.skyBottom, haze);
+
+  const sx = (x) => baseX + x * flip * scale;
+  const sy = (y) => baseY - y * scale;
+
+  // ---- stems ----
+  const maxThick = geo.maxThick || 1;
+  const buckets = new Array(WIDTH_BUCKETS).fill(null);
+
+  for (const s of geo.segments) {
+    const frac = reveal(s.order, t);
+    if (frac <= 0) continue;
+    const bi = clamp(Math.round((s.thick / maxThick) * (WIDTH_BUCKETS - 1)), 0, WIDTH_BUCKETS - 1);
+    let path = buckets[bi];
+    if (!path) path = buckets[bi] = new Path2D();
+    path.moveTo(sx(s.x0), sy(s.y0));
+    path.lineTo(sx(s.x0 + (s.x1 - s.x0) * frac), sy(s.y0 + (s.y1 - s.y0) * frac));
+  }
+
+  ctx.strokeStyle = css(stem);
+  ctx.lineCap = "round";
+  for (let i = 0; i < WIDTH_BUCKETS; i++) {
+    if (!buckets[i]) continue;
+    ctx.lineWidth = Math.max(0.6, ((i + 0.5) / WIDTH_BUCKETS) * maxThick * scale);
+    ctx.stroke(buckets[i]);
+  }
+
+  // ---- leaves ----
+  if (geo.leaves.length) {
+    const path = new Path2D();
+    let any = false;
+    for (const m of geo.leaves) {
+      const open = reveal(m.order, t);
+      if (open <= 0) continue;
+      const size = m.size * scale * open;
+      if (size < 0.4) continue;
+      any = true;
+      addLeaf(path, sx(m.x), sy(m.y), m.angle * flip, size);
+    }
+    if (any) { ctx.fillStyle = css(leaf); ctx.fill(path); }
+  }
+
+  // ---- flowers ----
+  if (geo.flowers.length && growth > sp.flowerStart) {
+    let bloom = smoothRange(sp.flowerStart, Math.min(1, sp.flowerStart + 0.22), growth);
+    bloom *= 1 - 0.75 * autumn;
+    if (bloom > 0.02) {
+      const petals = new Path2D();
+      const centres = new Path2D();
+      for (const m of geo.flowers) {
+        if (reveal(m.order, t) <= 0) continue;
+        const size = m.size * scale * bloom;
+        if (size < 0.4) continue;
+        const x = sx(m.x), y = sy(m.y);
+        for (let i = 0; i < 5; i++) {
+          const a = (i * Math.PI * 2) / 5 + m.angle;
+          const px = x + Math.cos(a) * size * 0.62, py = y + Math.sin(a) * size * 0.62;
+          petals.moveTo(px + size * 0.55, py);
+          petals.arc(px, py, size * 0.55, 0, Math.PI * 2);
+        }
+        centres.moveTo(x + size * 0.34, y);
+        centres.arc(x, y, size * 0.34, 0, Math.PI * 2);
+      }
+      ctx.fillStyle = css(bloomColor);
+      ctx.fill(petals);
+      ctx.fillStyle = css(palette.sun, 0.85);
+      ctx.fill(centres);
+    }
+  }
+}
+
+/** A leaf is a lens: two curves sharing the stem axis. */
+function addLeaf(path, x, y, angle, size) {
+  const s = Math.sin(angle), c = Math.cos(angle);
+  const tipX = x + s * size * 2.2, tipY = y - c * size * 2.2;
+  const px = c * size * 0.9, py = s * size * 0.9;
+  const midX = x + s * size * 1.1, midY = y - c * size * 1.1;
+  path.moveTo(x, y);
+  path.quadraticCurveTo(midX + px, midY + py, tipX, tipY);
+  path.quadraticCurveTo(midX - px, midY - py, x, y);
+}
+
+/* ==================================================================
+ * 7. Default garden — identical content to rust/species.json
+ * ================================================================== */
+
+const DEFAULT_GARDEN = {
+  world: { seed: 20260820, totalWeeks: 40, plantCount: 11, terrainRoughness: 0.55, autumnWeek: 30 },
+  species: [
+    {
+      name: "Meadow Grass", axiom: "X", rules: { X: "F[++X]F[--X]FX", F: "FF" },
+      iterations: 4, angleDeg: 11, angleJitterDeg: 4, stepLen: 3.4, lenFalloff: 0.97,
+      baseThickness: 1.0, thicknessTaper: 0.9, leafSize: 1.1,
+      weeksToMature: 6, germinationWeek: 0, germinationSpread: 2, flowerStart: 1.1,
+      stemColor: "#6E8C42", leafColor: "#8FB84A", autumnColor: "#C0A052", flowerColor: "#D9D08A",
+      weight: 2.2, matureHeight: 0.17, heightVariance: 0.3,
+    },
+    {
+      name: "Bracken Fern", axiom: "X", rules: { X: "F[+X]FL[-X]+X", F: "FF" },
+      iterations: 5, angleDeg: 21, angleJitterDeg: 5, stepLen: 3.2, lenFalloff: 0.9,
+      baseThickness: 0.9, thicknessTaper: 0.84, leafSize: 2.3,
+      weeksToMature: 11, germinationWeek: 1, germinationSpread: 3, flowerStart: 1.1,
+      stemColor: "#4A6134", leafColor: "#5CA043", autumnColor: "#B06A2C", flowerColor: "#CFE0A0",
+      weight: 1.6, matureHeight: 0.32, heightVariance: 0.22,
+    },
+    {
+      name: "Foxglove Spire", axiom: "X", rules: { X: "F[+FO][-L]F[-FO][+L][X]" },
+      iterations: 16, angleDeg: 54, angleJitterDeg: 9, stepLen: 5.4, lenFalloff: 0.88,
+      baseThickness: 2.4, thicknessTaper: 0.93, leafSize: 2.0,
+      weeksToMature: 13, germinationWeek: 5, germinationSpread: 4, flowerStart: 0.5,
+      stemColor: "#5A7038", leafColor: "#4C8C40", autumnColor: "#9C7A34", flowerColor: "#C77CB0",
+      weight: 1.1, matureHeight: 0.40, heightVariance: 0.2,
+    },
+    {
+      name: "Stonecrop Rosette", axiom: "X", rules: { X: "F[+XL][-XL][XL]" },
+      iterations: 4, angleDeg: 34, angleJitterDeg: 7, stepLen: 5.0, lenFalloff: 0.74,
+      baseThickness: 0.9, thicknessTaper: 0.8, leafSize: 1.7,
+      weeksToMature: 9, germinationWeek: 2, germinationSpread: 4, flowerStart: 0.8,
+      stemColor: "#6D7A4E", leafColor: "#79B063", autumnColor: "#C4623F", flowerColor: "#E6B7C6",
+      weight: 1.2, matureHeight: 0.11, heightVariance: 0.28,
+    },
+    {
+      name: "Hedge Willow", axiom: "F", rules: { F: "FF+[+F-F-FL]-[-F+F+FL]" },
+      iterations: 4, angleDeg: 23, angleJitterDeg: 6, stepLen: 2.6, lenFalloff: 0.86,
+      baseThickness: 2.0, thicknessTaper: 0.76, leafSize: 1.3,
+      weeksToMature: 22, germinationWeek: 0, germinationSpread: 2, flowerStart: 1.1,
+      stemColor: "#6B4A2F", leafColor: "#4A8C50", autumnColor: "#C4772F", flowerColor: "#E0D2A6",
+      weight: 0.9, matureHeight: 0.56, heightVariance: 0.2,
+    },
+  ],
+};
+
+/* ==================================================================
+ * 8. Application state and UI
+ * ================================================================== */
+
+const $ = (id) => document.getElementById(id);
+const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let garden = structuredClone(DEFAULT_GARDEN);
+let land = null;
+let selected = 0;
+let week = 0;
+let playing = !prefersReduced;
+let speed = 2.5;
+let lastFrame = performance.now();
+
+/** Regenerating every plant costs real work, and the editor fires on every
+ *  keystroke and slider tick — so coalesce bursts into one rebuild. */
+let rebuildTimer = 0;
+function scheduleRebuild() {
+  clearTimeout(rebuildTimer);
+  rebuildTimer = setTimeout(rebuild, 90);
+}
+
+function rebuild() {
+  land = generateLandscape(garden);
+  $("budget").hidden = !land.truncated;
+  if (land.truncated) {
+    $("budget").textContent = "Grammar hit the size budget — lower Iterations to see the whole plant.";
+  }
+  renderSpeciesList();
+  renderTicks();
+  $("json-out").value = exportJson();
+}
+
+/* ---- species list ---- */
+function renderSpeciesList() {
+  const list = $("species-list");
+  list.textContent = "";
+  const counts = new Map();
+  if (land) for (const p of land.plants) counts.set(p.speciesIndex, (counts.get(p.speciesIndex) || 0) + 1);
+
+  garden.species.forEach((sp, i) => {
+    const row = document.createElement("button");
+    row.className = "species-row";
+    row.type = "button";
+    row.setAttribute("role", "option");
+    row.setAttribute("aria-selected", String(i === selected));
+
+    const dot = document.createElement("span");
+    dot.className = "swatch";
+    dot.style.background = sp.leafColor;
+
+    const nm = document.createElement("span");
+    nm.className = "nm";
+    nm.textContent = sp.name;
+
+    const ct = document.createElement("span");
+    ct.className = "ct";
+    ct.textContent = `×${counts.get(i) || 0}`;
+
+    row.append(dot, nm, ct);
+    row.addEventListener("click", () => { selected = i; renderSpeciesList(); loadEditor(); });
+    list.append(row);
+  });
+  $("species-count").textContent = `${garden.species.length}`;
+}
+
+/* ---- timeline ticks and sprout markers ---- */
+function renderTicks() {
+  const el = $("ticks");
+  el.textContent = "";
+  const total = garden.world.totalWeeks;
+  const MONTHS = ["Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb"];
+  for (let m = 0; m * 4.345 <= total; m++) {
+    const wk = m * 4.345;
+    const tick = document.createElement("span");
+    tick.className = "tick";
+    tick.style.left = `${(wk / total) * 100}%`;
+    tick.textContent = MONTHS[m % 12];
+    el.append(tick);
+  }
+  // One dot per species at its earliest sprouting week — the chrome carries
+  // real data, not decoration.
+  garden.species.forEach((sp) => {
+    if (sp.germinationWeek > total) return;
+    const dot = document.createElement("span");
+    dot.className = "sprout";
+    dot.style.left = `${(sp.germinationWeek / total) * 100}%`;
+    dot.style.background = sp.leafColor;
+    dot.title = `${sp.name} sprouts around week ${sp.germinationWeek}`;
+    el.append(dot);
+  });
+}
+
+/* ---- editor binding ---- */
+function rulesToText(rules) {
+  return Object.entries(rules).map(([k, v]) => `${k} = ${v}`).join("\n");
+}
+
+function textToRules(text) {
+  const rules = {};
+  const bad = [];
+  for (const raw of text.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = line.match(/^(\S)\s*(?:=|->|→|:)\s*(.*)$/);
+    if (!m) { bad.push(line); continue; }
+    rules[m[1]] = m[2].trim();
+  }
+  return { rules, bad };
+}
+
+const NUM_FIELDS = [
+  ["f-step", "stepLen"], ["f-falloff", "lenFalloff"], ["f-jitter", "angleJitterDeg"],
+  ["f-thick", "baseThickness"], ["f-taper", "thicknessTaper"], ["f-leafsize", "leafSize"],
+  ["f-scale", "matureHeight"], ["f-variance", "heightVariance"], ["f-weight", "weight"],
+  ["f-germ", "germinationWeek"], ["f-spread", "germinationSpread"], ["f-mature", "weeksToMature"],
+];
+const COLOR_FIELDS = [
+  ["f-stem-color", "stemColor"], ["f-leaf-color", "leafColor"],
+  ["f-flower-color", "flowerColor"], ["f-autumn-color", "autumnColor"],
+];
+
+function current() { return garden.species[selected]; }
+
+function loadEditor() {
+  const sp = current();
+  if (!sp) return;
+  $("f-name").value = sp.name;
+  $("f-axiom").value = sp.axiom;
+  $("f-rules").value = rulesToText(sp.rules);
+  $("f-iterations").value = sp.iterations;
+  $("f-angle").value = sp.angleDeg;
+  $("f-flower").value = sp.flowerStart;
+  for (const [id, key] of NUM_FIELDS) $(id).value = sp[key];
+  for (const [id, key] of COLOR_FIELDS) $(id).value = sp[key];
+  updateEditorLabels();
+}
+
+function updateEditorLabels() {
+  const sp = current();
+  if (!sp) return;
+  $("v-iterations").textContent = sp.iterations;
+  $("v-angle").textContent = `${sp.angleDeg}°`;
+  $("v-flower").textContent = sp.flowerStart > 1 ? "never" : `${Math.round(sp.flowerStart * 100)}%`;
+}
+
+function commitEditor() {
+  const sp = current();
+  if (!sp) return;
+  sp.name = $("f-name").value || "Unnamed";
+  sp.axiom = $("f-axiom").value;
+  sp.iterations = Number($("f-iterations").value);
+  sp.angleDeg = Number($("f-angle").value);
+  sp.flowerStart = Number($("f-flower").value);
+  for (const [id, key] of NUM_FIELDS) {
+    const v = Number($(id).value);
+    if (Number.isFinite(v)) sp[key] = v;
+  }
+  for (const [id, key] of COLOR_FIELDS) sp[key] = $(id).value;
+
+  const { rules, bad } = textToRules($("f-rules").value);
+  sp.rules = rules;
+  $("rule-error").textContent = bad.length
+    ? `Ignored: ${bad[0]}  —  each line needs "symbol = replacement".`
+    : "";
+
+  updateEditorLabels();
+  scheduleRebuild();
+}
+
+function loadWorld() {
+  const w = garden.world;
+  $("w-seed").value = w.seed;
+  $("w-count").value = w.plantCount;
+  $("w-rough").value = w.terrainRoughness;
+  $("w-weeks").value = w.totalWeeks;
+  $("w-autumn").value = w.autumnWeek;
+  $("v-rough").textContent = w.terrainRoughness.toFixed(2);
+  $("time").max = w.totalWeeks;
+}
+
+function commitWorld() {
+  const w = garden.world;
+  w.seed = Math.max(0, Math.round(Number($("w-seed").value) || 0));
+  w.plantCount = clamp(Math.round(Number($("w-count").value) || 1), 1, 60);
+  w.terrainRoughness = Number($("w-rough").value);
+  w.totalWeeks = clamp(Number($("w-weeks").value) || 40, 4, 120);
+  w.autumnWeek = Number($("w-autumn").value);
+  $("v-rough").textContent = w.terrainRoughness.toFixed(2);
+  $("time").max = w.totalWeeks;
+  week = Math.min(week, w.totalWeeks);
+  scheduleRebuild();
+}
+
+/* ---- export ---- */
+const camelToSnake = (s) => s.replace(/[A-Z]/g, (c) => "_" + c.toLowerCase());
+
+/** Rename the camelCase keys used here to the snake_case keys serde expects,
+ *  so the output pastes straight into rust/species.json. Rule keys are single
+ *  symbols and pass through untouched. */
+function exportJson() {
+  const conv = (obj) =>
+    Object.fromEntries(Object.entries(obj).map(([k, v]) => [camelToSnake(k), v]));
+  return JSON.stringify(
+    { world: conv(garden.world), species: garden.species.map(conv) },
+    null, 2
+  );
+}
+
+/* ---- readouts ---- */
+const MONTH_NAMES = ["March", "April", "May", "June", "July", "August",
+  "September", "October", "November", "December", "January", "February"];
+
+function calendarLabel(wk) {
+  const days = wk * 7;
+  const m = Math.min(MONTH_NAMES.length - 1, Math.floor(days / 30.4));
+  const d = Math.min(30, Math.floor(days - m * 30.4) + 1);
+  return `${MONTH_NAMES[m]} ${d}`;
+}
+
+function seasonLabel(wk, total) {
+  const f = clamp(wk / Math.max(1, total), 0, 1);
+  if (f < 0.16) return "early spring";
+  if (f < 0.34) return "late spring";
+  if (f < 0.58) return "summer";
+  if (f < 0.74) return "late summer";
+  if (f < 0.9) return "autumn";
+  return "first frost";
+}
+
+function updateReadout() {
+  $("ro-week").textContent = `wk ${week.toFixed(1)}`;
+  $("ro-date").textContent = calendarLabel(week);
+  $("ro-season").textContent = seasonLabel(week, garden.world.totalWeeks);
+  $("time").value = week;
+}
+
+/* ---- wiring ---- */
+$("play").addEventListener("click", () => {
+  playing = !playing;
+  $("play").textContent = playing ? "Pause" : "Play";
+});
+$("time").addEventListener("input", (e) => {
+  playing = false;
+  $("play").textContent = "Play";
+  week = Number(e.target.value);
+  updateReadout();
+});
+$("speed").addEventListener("input", (e) => {
+  speed = Number(e.target.value);
+  $("speed-val").textContent = `${speed} wk/s`;
+});
+$("reseed").addEventListener("click", () => {
+  garden.world.seed = (Math.imul(garden.world.seed, 1664525) + 1013904223) >>> 0;
+  $("w-seed").value = garden.world.seed;
+  rebuild();
+});
+
+for (const id of ["f-name", "f-axiom", "f-rules", "f-iterations", "f-angle", "f-flower",
+  ...NUM_FIELDS.map((f) => f[0]), ...COLOR_FIELDS.map((f) => f[0])]) {
+  $(id).addEventListener("input", commitEditor);
+}
+for (const id of ["w-seed", "w-count", "w-rough", "w-weeks", "w-autumn"]) {
+  $(id).addEventListener("input", commitWorld);
+}
+
+$("add-species").addEventListener("click", () => {
+  garden.species.push({
+    ...structuredClone(DEFAULT_GARDEN.species[1]),
+    name: `Species ${garden.species.length + 1}`,
+    germinationWeek: 0,
+  });
+  selected = garden.species.length - 1;
+  rebuild();
+  loadEditor();
+});
+$("dup-species").addEventListener("click", () => {
+  const sp = current();
+  if (!sp) return;
+  garden.species.splice(selected + 1, 0, { ...structuredClone(sp), name: `${sp.name} II` });
+  selected += 1;
+  rebuild();
+  loadEditor();
+});
+$("del-species").addEventListener("click", () => {
+  if (garden.species.length <= 1) return;
+  garden.species.splice(selected, 1);
+  selected = Math.max(0, selected - 1);
+  rebuild();
+  loadEditor();
+});
+$("reset-all").addEventListener("click", () => {
+  garden = structuredClone(DEFAULT_GARDEN);
+  selected = 0;
+  week = 0;
+  loadWorld();
+  rebuild();
+  loadEditor();
+});
+$("copy-json").addEventListener("click", async (e) => {
+  const text = exportJson();
+  const btn = e.currentTarget;
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = "Copied";
+  } catch {
+    // Clipboard access can be blocked; fall back to selecting the text.
+    const ta = $("json-out");
+    ta.closest("details").open = true;
+    ta.select();
+    btn.textContent = "Select + copy";
+  }
+  setTimeout(() => { btn.textContent = "Copy species.json"; }, 1800);
+});
+
+// Theme can change under us in three ways; re-read the tokens for all of them.
+const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+darkQuery.addEventListener("change", refreshPalette);
+new MutationObserver(refreshPalette).observe(document.documentElement, {
+  attributes: true, attributeFilter: ["data-theme"],
+});
+
+const ro = new ResizeObserver(resizeCanvas);
+ro.observe(canvas);
+window.addEventListener("resize", resizeCanvas);
+
+/* ---- boot ---- */
+refreshPalette();
+resizeCanvas();
+loadWorld();
+rebuild();
+loadEditor();
+$("play").textContent = playing ? "Pause" : "Play";
+$("speed-val").textContent = `${speed} wk/s`;
+
+function frame(now) {
+  const dt = Math.min(0.1, (now - lastFrame) / 1000);
+  lastFrame = now;
+  if (playing) {
+    week += speed * dt;
+    if (week > garden.world.totalWeeks) week = 0;
+  }
+  updateReadout();
+  drawScene(garden, land, week);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
